@@ -23,6 +23,17 @@ venv.bak/
 .coverage
 htmlcov/
 
+# ── Flutter / Dart ───────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+*.iml
+.metadata
+windows/flutter/ephemeral/
+
 # ── IDEs & Editors ───────────────────────────────────────
 .vscode/
 .idea/

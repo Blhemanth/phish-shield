@@ -1,198 +1,109 @@
-# PhishShield AI 🛡️
+# PhishShield AI 🛡️ (Flutter Cross-Platform)
 
-A sleek, dark-themed, single-page web application that detects **fake offer letters**, **pay-for-equipment phishing scams**, and **deposit traps** targeting job seekers — powered by a hybrid **Gemini AI** + **offline heuristic** detection engine.
+A sleek, dark-themed, cross-platform application targeting **Windows Desktop, Android, iOS, and Web** that detects **fake offer letters**, **pay-for-equipment phishing scams**, and **deposit traps** targeting job seekers — powered by a hybrid **Gemini AI** + **pure Dart offline heuristic** engine.
 
 ---
 
 ## ✨ Features
 
-- **Dual-Mode Detection Engine** — Gemini AI for deep semantic analysis with an offline JavaScript fallback that works without any API key
-- **Scam Threat Index Gauge** — Animated 0–100 SVG meter with real-time color shifts
-- **Threat Level Badge** — LOW / MEDIUM / HIGH / CRITICAL with glowing status indicators
-- **Red Flag Cards** — Categorized threat cards (Financial Trap, Identity Theft, Social Engineering, etc.) with severity badges
-- **Verification Checklist** — Actionable, interactive checklist job seekers can tick off
-- **Phishing Sample Loader** — One-click load of a realistic multi-vector scam offer for demo/testing
-- **Real-time API Health Check** — Status pill shows if Gemini API is connected or falling back to heuristics
+- **Cross-Platform Architecture** — Built with Flutter 3.x for native performance on Windows, Android, iOS, and Web
+- **Dual-Engine Detection** — Primary Gemini AI REST client (`http` package) with an automatic offline Dart regex/keyword analyzer fallback
+- **Interactive Scam Threat Meter** — Custom-painted animated 0–100% SVG arc gauge matching threat level severity
+- **Categorized Red Flags** — Visual cards highlighting Financial Traps, Identity Theft, Social Engineering, and Urgency Pressure
+- **Safety Verification Checklist** — Actionable interactive checklist for job seekers
+- **Sample Scam Loader** — One-touch quick load of multi-vector offer letter fraud samples
+- **Runtime API Key Config** — Easily set your Gemini API key in the app settings, or rely on built-in offline heuristics
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                   index.html (Frontend)               │
-│                                                        │
-│  ┌─────────────────┐     ┌─────────────────────────┐  │
-│  │  Input Panel     │     │  Results Dashboard       │  │
-│  │  - Offer text    │     │  - Scam Threat Gauge     │  │
-│  │  - Company URL   │     │  - Threat Level Badge    │  │
-│  │  - Sample Loader │     │  - AI Summary Card       │  │
-│  │  - Inspect CTA   │     │  - Red Flags Container   │  │
-│  └────────┬─────────┘     │  - Verification List     │  │
-│           │               └─────────────────────────┘  │
-└───────────┼──────────────────────────────────────────-─┘
-            │
-            ▼  POST /api/inspect
-   ┌─────────────────────┐          ┌─────────────────┐
-   │   app.py (Flask)    │────────▶│  Gemini AI      │
-   │   /api/inspect       │◀────────│  google-genai    │
-   │   /api/health        │          └─────────────────┘
-   └─────────────────────┘
-            │ (if API fails / offline)
-            ▼
-   ┌───────────────────────────────┐
-   │  Client-Side Heuristic Engine │
-   │  17 weighted regex rules      │
-   │  (runs entirely in browser)   │
-   └───────────────────────────────┘
+phish-shield/
+├── lib/
+│   └── main.dart            # Flutter UI, state management, Gemini API REST service, & pure Dart offline engine
+├── pubspec.yaml             # App manifest & dependencies (http, cupertino_icons)
+├── test/
+│   └── widget_test.dart     # Unit & widget test suite
+├── windows/                 # Native Windows runner
+├── android/                 # Native Android runner
+├── ios/                     # Native iOS runner
+└── web/                     # Native Web runner
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.9+
-- A [Google AI Studio](https://aistudio.google.com/) API key (free tier available)
+- [Flutter SDK 3.x](https://docs.flutter.dev/get-started/install) installed and added to `PATH`
+- [Google AI Studio API key](https://aistudio.google.com/app/apikey) (Optional — fallback engine runs offline without any key)
 
-### 1. Clone / Navigate to Project
+### 1. Clone & Navigate
 ```bash
-git clone https://github.com/your-username/phish-shield.git
+git clone https://github.com/Blhemanth/phish-shield.git
 cd phish-shield
 ```
 
-### 2. Install Python Dependencies
+### 2. Fetch Dependencies
 ```bash
-pip install -r requirements.txt
+flutter pub get
 ```
 
-### 3. Configure Environment
-Create a `.env` file in the project root:
-```env
-GEMINI_API_KEY=your_google_ai_studio_api_key_here
-GEMINI_MODEL=gemini-3.6-flash
-FLASK_DEBUG=false
-PORT=5000
-```
+### 3. Run on Platform of Choice
 
-> **Get your free API key**: Visit [Google AI Studio](https://aistudio.google.com/app/apikey), sign in with your Google account, and click **Create API Key**.
-
-### 4. Start the Application
+#### 🪟 Windows Desktop
 ```bash
-python app.py
-```
-You should see:
-```
-PhishShield AI backend running on http://localhost:5000
-Gemini API key: [OK] configured
+flutter run -d windows
 ```
 
-### 5. Open in Browser
-Open your browser and navigate to:
-```
-http://localhost:5000
-```
-
-> **Note**: You can also double-click `index.html` directly in your file explorer to run in standalone client-side heuristic mode without any server.
-
----
-
-## 🔌 API Reference
-
-### `POST /api/inspect`
-Analyzes an offer letter for phishing indicators using Gemini AI.
-
-**Request Body:**
-```json
-{
-  "offer_text": "Full text of the offer letter or email...",
-  "company_url": "https://optional-company-url.com"
-}
+#### 🌐 Web (Chrome)
+```bash
+flutter run -d chrome
 ```
 
-**Response (200 OK):**
-```json
-{
-  "scam_threat_index": 87,
-  "threat_level": "CRITICAL",
-  "summary": "This offer exhibits multiple hallmarks of employment fraud...",
-  "red_flags_detected": [
-    {
-      "category": "Financial Trap",
-      "flag_title": "Pay-for-Equipment Scheme",
-      "description": "The offer requires you to purchase equipment upfront...",
-      "severity": "CRITICAL"
-    }
-  ],
-  "verification_checklist": [
-    "Verify the company on its official website directly...",
-    "Call the company's publicly listed phone number..."
-  ]
-}
+#### 📱 Android
+```bash
+flutter run -d <android-device-id>
 ```
 
-**Error Responses:**
-| Code | Meaning |
-|------|---------|
-| 400  | Missing `offer_text` |
-| 503  | Gemini API key not configured or API error |
-| 502  | AI returned unparseable response |
-
-### `GET /api/health`
-Returns API status and key configuration state.
-
----
-
-## 🧠 Offline Heuristic Engine
-
-The client-side JavaScript heuristic engine runs **entirely in the browser** with no network requests. It uses **17 weighted regex rules** across 7 threat categories:
-
-| Category | Examples |
-|----------|---------|
-| Financial Trap | Cashier check, wire transfer, Zelle, CashApp, equipment purchase |
-| Identity Theft | SSN request, bank routing numbers, ID scan requests |
-| Social Engineering | Unsolicited profile selection, vague company claims |
-| Urgency Pressure | "Expires in 24 hours", "act now", "immediately" |
-| Communication Red Flag | Gmail/Yahoo corporate email, WhatsApp/Telegram only |
-| Unrealistic Offer | $150k+ salary with no experience required |
-| Impersonation | Found you on LinkedIn/Indeed without application |
-
-Scores are weighted and normalized to a 0–100 threat index.
-
----
-
-## 🎨 Design System
-
-| Token | Value |
-|-------|-------|
-| Background | `#020617` (slate-950) |
-| Surface | `rgba(15,23,42,0.7)` (glassmorphism) |
-| Accent | `#6366f1` (indigo-500) |
-| Critical | `#ef4444` (red-500) |
-| High | `#fb923c` (orange-400) |
-| Medium | `#facc15` (yellow-400) |
-| Low / Safe | `#4ade80` (green-400) |
-| Font | Inter + JetBrains Mono |
-
----
-
-## 📁 Project Structure
-
-```
-phish-shield/
-├── index.html          # Complete frontend SPA
-├── app.py              # Flask + Gemini AI backend
-├── requirements.txt    # Python dependencies
-├── .env.example        # Example environment configuration
-├── README.md           # Documentation
-└── .gitignore          # Git ignore rules
+#### 🍏 iOS (macOS required)
+```bash
+flutter run -d <ios-device-id>
 ```
 
 ---
 
-## ⚠️ Disclaimer
+## 📦 Building Production Release Binaries
 
-PhishShield AI is an **educational and awareness tool**. It does not guarantee detection of all scams. Always verify job offers through multiple official channels before sharing any personal or financial information. Report suspected scams to the [FTC](https://reportfraud.ftc.gov).
+### Windows Desktop Executable (`.exe`)
+```bash
+flutter build windows
+```
+*Output artifact:* `build/windows/x64/runner/Release/`
+
+### Android Application Package (`.apk`) / App Bundle (`.aab`)
+```bash
+flutter build apk --release
+# or
+flutter build appbundle --release
+```
+*Output artifact:* `build/app/outputs/flutter-apk/app-release.apk`
+
+### Web Deployment Package
+```bash
+flutter build web --release
+```
+*Output artifact:* `build/web/`
+
+---
+
+## 🧪 Testing
+
+Run automated unit tests for the heuristic engine and UI components:
+```bash
+flutter test
+```
 
 ---
 
