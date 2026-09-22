@@ -487,12 +487,52 @@ You MUST respond with ONLY a valid JSON object (no markdown, no code fences, no 
 }
 ''';
 
-  static Future<InspectionResult> inspect({
+  static Future<InspectionResult> inspectViaBackend({
+    required String offerText,
+    String? companyUrl,
+    String backendUrl = 'http://localhost:5000',
+  }) async {
+    final url = Uri.parse('$backendUrl/api/inspect');
+    final response = await http
+        .post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'offer_text': offerText,
+            'company_url': companyUrl ?? '',
+          }),
+        )
+        .timeout(const Duration(seconds: 25));
+
+    if (response.statusCode == 200) {
+      final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+      return InspectionResult.fromJson(parsed, 'Gemini AI (Flask Backend)');
+    } else {
+      final body = jsonDecode(response.body);
+      throw Exception(body['error'] ?? 'Backend error ${response.statusCode}');
+    }
+  }
+
+  static Future<Map<String, dynamic>?> checkBackendHealth({
+    String backendUrl = 'http://localhost:5000',
+  }) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$backendUrl/api/health'))
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<InspectionResult> inspectDirect({
     required String offerText,
     required String apiKey,
     String? companyUrl,
   }) async {
-    final candidateModels = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-1.5-flash'];
+    final candidateModels = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     Exception? lastError;
 
     for (final model in candidateModels) {
@@ -637,6 +677,7 @@ class _HomeScreenState extends State<HomeScreen>
   String _customApiKey = '';
   bool _isLoading = false;
   InspectionResult? _result;
+  bool _isBackendOnline = false;
   late AnimationController _gaugeAnimController;
   late Animation<double> _gaugeAnimation;
 
@@ -652,6 +693,16 @@ class _HomeScreenState extends State<HomeScreen>
       parent: _gaugeAnimController,
       curve: Curves.easeOutCubic,
     ));
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final health = await GeminiApiService.checkBackendHealth();
+    if (mounted && health != null && health['gemini_key_configured'] == true) {
+      setState(() {
+        _isBackendOnline = true;
+      });
+    }
   }
 
   @override
@@ -704,30 +755,28 @@ class _HomeScreenState extends State<HomeScreen>
     });
 
     InspectionResult result;
-    if (_customApiKey.isNotEmpty) {
-      try {
-        result = await GeminiApiService.inspect(
-          offerText: text,
-          apiKey: _customApiKey,
-          companyUrl: _companyUrlController.text.trim(),
-        );
-      } catch (e) {
-        // Fallback to offline engine
-        result = OfflineHeuristicsEngine.analyze(text);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Gemini API request failed ($e). Switched to offline heuristics engine.'),
-              backgroundColor: AppTheme.orange400,
-              behavior: SnackBarBehavior.floating,
-            ),
+    try {
+      // 1. Try Flask backend proxy (which reads GEMINI_API_KEY from .env)
+      result = await GeminiApiService.inspectViaBackend(
+        offerText: text,
+        companyUrl: _companyUrlController.text.trim(),
+      );
+    } catch (_) {
+      // 2. If backend isn't available, try custom direct API key if set
+      if (_customApiKey.isNotEmpty) {
+        try {
+          result = await GeminiApiService.inspectDirect(
+            offerText: text,
+            apiKey: _customApiKey,
+            companyUrl: _companyUrlController.text.trim(),
           );
+        } catch (_) {
+          result = OfflineHeuristicsEngine.analyze(text);
         }
+      } else {
+        // 3. Fallback to offline heuristic engine
+        result = OfflineHeuristicsEngine.analyze(text);
       }
-    } else {
-      // Direct offline heuristic scan
-      result = OfflineHeuristicsEngine.analyze(text);
     }
 
     setState(() {
@@ -843,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   PreferredSizeWidget _buildAppBar() {
-    final hasKey = _customApiKey.isNotEmpty;
+    final hasKey = _isBackendOnline || _customApiKey.isNotEmpty;
     return AppBar(
       backgroundColor: AppTheme.slate950,
       elevation: 0,
