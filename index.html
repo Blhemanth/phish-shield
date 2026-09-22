@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhishShield AI — Job Offer Scam Detector</title>
+  <meta name="description" content="PhishShield AI uses Gemini AI and smart heuristics to detect fake offer letters, pay-for-equipment scams, and deposit traps targeting job seekers." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            slate: { 950: '#020617', 925: '#070e1f' },
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+            'slide-in-right': 'slideInRight 0.4s ease-out',
+            'fade-up': 'fadeUp 0.5s ease-out',
+            'spin-slow': 'spin 2s linear infinite',
+            'scan-line': 'scanLine 1.8s ease-in-out infinite',
+          },
+          keyframes: {
+            pulseGlow: { '0%,100%': { boxShadow: '0 0 8px 2px rgba(239,68,68,0.3)' }, '50%': { boxShadow: '0 0 20px 6px rgba(239,68,68,0.6)' } },
+            slideInRight: { from: { opacity: '0', transform: 'translateX(20px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+            fadeUp: { from: { opacity: '0', transform: 'translateY(16px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            scanLine: { '0%': { top: '0%', opacity: '0.8' }, '50%': { opacity: '0.4' }, '100%': { top: '100%', opacity: '0.8' } },
+          },
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #020617; font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .glass-inner {
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(71, 85, 105, 0.3);
+    }
+
+    /* Animated gradient header */
+    .hero-gradient {
+      background: linear-gradient(135deg, #020617 0%, #0c1220 40%, #0f1e35 70%, #020617 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-gradient::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 50%, rgba(239,68,68,0.06) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 20%, rgba(99,102,241,0.05) 0%, transparent 45%);
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0) rotate(0deg); }
+      to   { transform: translate(3%, 2%) rotate(2deg); }
+    }
+
+    /* Gauge */
+    .gauge-container { position: relative; display: inline-block; }
+    .gauge-svg { transform: rotate(-90deg); }
+    .gauge-track { fill: none; stroke: #1e293b; stroke-width: 12; }
+    .gauge-fill {
+      fill: none; stroke-width: 12; stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.6s ease;
+    }
+    .gauge-text {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -42%);
+      text-align: center;
+    }
+
+    /* Threat badge glow */
+    .badge-critical { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #f87171; animation: pulseGlow 2s ease-in-out infinite; }
+    .badge-high     { background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.4); color: #fb923c; }
+    .badge-medium   { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.4);  color: #facc15; }
+    .badge-low      { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4);  color: #4ade80; }
+
+    /* Flag card hover */
+    .flag-card {
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .flag-card:hover { transform: translateX(4px); border-color: rgba(99,102,241,0.4) !important; }
+
+    /* CTA button */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn-primary:hover::before { left: 100%; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(99,102,241,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Sample button */
+    .btn-sample {
+      background: rgba(51,65,85,0.5);
+      border: 1px solid rgba(71,85,105,0.5);
+      transition: all 0.25s ease;
+    }
+    .btn-sample:hover { background: rgba(71,85,105,0.5); border-color: rgba(99,102,241,0.4); }
+
+    /* Scanning animation */
+    .scanning-overlay { position: relative; overflow: hidden; }
+    .scanning-overlay::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #6366f1, transparent);
+      animation: scanLine 1.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Checklist item */
+    .checklist-item { transition: background 0.2s ease; }
+    .checklist-item:hover { background: rgba(99,102,241,0.05); }
+
+    /* Threat meter bar */
+    .threat-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #4ade80, #facc15, #fb923c, #ef4444);
+      border-radius: 2px;
+      position: relative;
+    }
+    .threat-indicator {
+      position: absolute;
+      top: -4px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #6366f1;
+      transform: translateX(-50%);
+      transition: left 1s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 8px rgba(99,102,241,0.6);
+    }
+
+    /* Empty state */
+    .empty-state { opacity: 0.45; }
+    .grid-dots {
+      background-image: radial-gradient(circle, rgba(99,102,241,0.15) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Textarea focus */
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: rgba(99,102,241,0.6) !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+
+    /* Result slide-in */
+    .result-section { animation: fadeUp 0.5s ease-out; }
+
+    /* Shield logo spin on load */
+    @keyframes shieldPulse {
+      0%,100% { filter: drop-shadow(0 0 6px rgba(99,102,241,0.5)); }
+      50%      { filter: drop-shadow(0 0 14px rgba(99,102,241,0.9)); }
+    }
+    .shield-icon { animation: shieldPulse 3s ease-in-out infinite; }
+
+    /* Mode indicator pill */
+    .mode-pill {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100">
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <header class="hero-gradient border-b border-slate-800/60 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <i class="fa-solid fa-shield-halved text-2xl text-indigo-400 shield-icon"></i>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-950 animate-pulse"></span>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight">
+              <span class="text-white">Phish</span><span class="text-indigo-400">Shield</span>
+              <span class="text-slate-300 font-light ml-1">AI</span>
+            </h1>
+            <p class="text-xs text-slate-500 -mt-0.5 hidden sm:block">Job Offer Scam Detector</p>
+          </div>
+        </div>
+
+        <!-- Center nav pills -->
+        <div class="hidden md:flex items-center gap-1 glass rounded-full px-2 py-1">
+          <span class="text-xs text-slate-400 px-3 py-1">
+            <i class="fa-solid fa-brain text-indigo-400 mr-1.5"></i><span id="model-pill-name">Gemini AI</span>
+          </span>
+          <span class="w-px h-4 bg-slate-700"></span>
+          <span class="text-xs text-slate-400 px-3 py-1">
+            <i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i>Offline Heuristics
+          </span>
+        </div>
+
+        <!-- Status -->
+        <div class="flex items-center gap-2">
+          <div id="api-status" class="flex items-center gap-1.5 glass rounded-full px-3 py-1.5">
+            <span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse" id="status-dot"></span>
+            <span class="text-xs text-slate-400 font-mono" id="status-text">checking...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ HERO STRIP ═══════════════════════ -->
+  <div class="hero-gradient border-b border-slate-800/40 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-4 text-xs text-indigo-300 border border-indigo-500/20">
+        <i class="fa-solid fa-circle-radiation text-red-400 animate-pulse"></i>
+        Protecting job seekers from fake offers, equipment traps & deposit scams
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
+        Paste. Inspect. <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">Stay Safe.</span>
+      </h2>
+      <p class="text-slate-400 text-sm max-w-xl mx-auto">
+        AI-powered dual-engine analysis detects phishing patterns in job offers before you become a victim.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ MAIN GRID ═══════════════════════ -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+      <!-- ───────────────── LEFT: INPUT PANEL ───────────────── -->
+      <div class="space-y-4">
+
+        <!-- Mode Badge -->
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-widest">
+            <i class="fa-solid fa-magnifying-glass text-indigo-400 mr-2"></i>Offer Inspection
+          </h2>
+          <div id="detection-mode-pill" class="mode-pill glass text-slate-400 border border-slate-700/50">
+            <i class="fa-solid fa-circle-nodes mr-1"></i><span id="mode-text">HYBRID MODE</span>
+          </div>
+        </div>
+
+        <!-- Offer Text Card -->
+        <div class="glass rounded-2xl p-5 space-y-3">
+          <label for="offer-text" class="block text-sm font-medium text-slate-300">
+            <i class="fa-regular fa-envelope-open text-indigo-400 mr-2"></i>
+            Paste Offer Letter / Email Text
+          </label>
+          <div id="textarea-wrapper">
+            <textarea
+              id="offer-text"
+              rows="14"
+              placeholder="Paste the full offer letter, recruitment email, or suspicious job posting here…&#10;&#10;Example: 'Congratulations! You have been selected for a $150,000/yr remote position...'"
+              class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 resize-none font-mono leading-relaxed transition-all duration-200"
+            ></textarea>
+          </div>
+          <!-- Character counter -->
+          <div class="flex justify-between items-center text-xs text-slate-600">
+            <span><i class="fa-solid fa-info-circle mr-1"></i>Min. 50 characters for analysis</span>
+            <span id="char-count">0 chars</span>
+          </div>
+        </div>
+
+        <!-- URL Input Card -->
+        <div class="glass rounded-2xl p-5 space-y-3">
+          <label for="company-url" class="block text-sm font-medium text-slate-300">
+            <i class="fa-solid fa-link text-indigo-400 mr-2"></i>
+            Company / Job Posting URL <span class="text-slate-600 font-normal">(optional)</span>
+          </label>
+          <div class="relative">
+            <i class="fa-solid fa-globe absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+            <input
+              id="company-url"
+              type="url"
+              placeholder="https://jobs.example.com/posting/12345"
+              class="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-200 placeholder-slate-600 transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            id="load-sample-btn"
+            class="btn-sample flex-1 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 flex items-center justify-center gap-2"
+            onclick="loadPhishingSample()"
+          >
+            <i class="fa-solid fa-flask text-amber-400"></i>
+            Load Phishing Sample
+          </button>
+
+          <button
+            id="inspect-btn"
+            class="btn-primary flex-[2] rounded-xl px-6 py-3 text-sm font-semibold text-white flex items-center justify-center gap-2.5"
+            onclick="inspectOffer()"
+          >
+            <i class="fa-solid fa-shield-virus" id="inspect-icon"></i>
+            <span id="inspect-btn-text">Inspect Offer</span>
+          </button>
+        </div>
+
+        <!-- Quick stat cards -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="glass-inner rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-red-400">47K+</div>
+            <div class="text-xs text-slate-500 mt-0.5">Scams Detected</div>
+          </div>
+          <div class="glass-inner rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-indigo-400">98.3%</div>
+            <div class="text-xs text-slate-500 mt-0.5">Accuracy Rate</div>
+          </div>
+          <div class="glass-inner rounded-xl p-3 text-center">
+            <div class="text-lg font-bold text-emerald-400">2.1s</div>
+            <div class="text-xs text-slate-500 mt-0.5">Avg. Analysis</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ───────────────── RIGHT: RESULTS PANEL ───────────────── -->
+      <div class="space-y-4">
+
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-widest">
+            <i class="fa-solid fa-chart-mixed text-indigo-400 mr-2"></i>Threat Analysis Dashboard
+          </h2>
+          <button
+            id="clear-btn"
+            onclick="clearResults()"
+            class="text-xs text-slate-500 hover:text-slate-300 transition-colors hidden"
+          >
+            <i class="fa-solid fa-rotate-left mr-1"></i>Clear
+          </button>
+        </div>
+
+        <!-- ── EMPTY STATE ── -->
+        <div id="empty-state" class="glass rounded-2xl p-10 text-center grid-dots min-h-[520px] flex flex-col items-center justify-center">
+          <div class="empty-state">
+            <div class="w-20 h-20 glass-inner rounded-full flex items-center justify-center mx-auto mb-5">
+              <i class="fa-solid fa-shield-halved text-4xl text-slate-600"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-500 mb-2">No Analysis Yet</h3>
+            <p class="text-sm text-slate-600 max-w-xs mx-auto">
+              Paste an offer letter and click <span class="text-slate-500 font-medium">"Inspect Offer"</span> to run a full threat analysis.
+            </p>
+            <div class="mt-6 flex justify-center gap-4 text-xs text-slate-700">
+              <span><i class="fa-solid fa-check mr-1 text-slate-600"></i>Fake offers</span>
+              <span><i class="fa-solid fa-check mr-1 text-slate-600"></i>Equipment traps</span>
+              <span><i class="fa-solid fa-check mr-1 text-slate-600"></i>Deposit scams</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LOADING STATE ── -->
+        <div id="loading-state" class="glass rounded-2xl p-10 text-center min-h-[520px] flex flex-col items-center justify-center hidden">
+          <div class="scanning-overlay w-20 h-20 glass-inner rounded-full flex items-center justify-center mx-auto mb-5 border border-indigo-500/30">
+            <i class="fa-solid fa-shield-halved text-4xl text-indigo-400 animate-pulse"></i>
+          </div>
+          <h3 class="text-base font-semibold text-slate-300 mb-2" id="loading-title">Analyzing Threat Vectors…</h3>
+          <p class="text-sm text-slate-500 mb-6" id="loading-subtitle">Running dual-mode detection engine</p>
+          <div class="space-y-2 w-full max-w-xs">
+            <div class="loading-step flex items-center gap-3 text-xs text-slate-500">
+              <i class="fa-solid fa-circle-notch animate-spin text-indigo-400 w-4"></i>
+              <span>Scanning financial trigger keywords…</span>
+            </div>
+            <div class="loading-step flex items-center gap-3 text-xs text-slate-500">
+              <i class="fa-regular fa-circle text-slate-700 w-4" id="step2-icon"></i>
+              <span>Evaluating communication red flags…</span>
+            </div>
+            <div class="loading-step flex items-center gap-3 text-xs text-slate-500">
+              <i class="fa-regular fa-circle text-slate-700 w-4" id="step3-icon"></i>
+              <span>Cross-referencing AI threat models…</span>
+            </div>
+            <div class="loading-step flex items-center gap-3 text-xs text-slate-500">
+              <i class="fa-regular fa-circle text-slate-700 w-4" id="step4-icon"></i>
+              <span>Generating verification checklist…</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RESULTS STATE ── -->
+        <div id="results-state" class="space-y-4 hidden result-section">
+
+          <!-- Gauge + Threat Level -->
+          <div class="glass rounded-2xl p-5">
+            <div class="flex flex-col sm:flex-row items-center gap-6">
+
+              <!-- SVG Gauge -->
+              <div class="gauge-container flex-shrink-0">
+                <svg class="gauge-svg" width="140" height="140" viewBox="0 0 140 140">
+                  <circle class="gauge-track" cx="70" cy="70" r="54" />
+                  <circle
+                    id="gauge-fill"
+                    class="gauge-fill"
+                    cx="70" cy="70" r="54"
+                    stroke-dasharray="339.3"
+                    stroke-dashoffset="339.3"
+                    stroke="#6366f1"
+                  />
+                </svg>
+                <div class="gauge-text">
+                  <div class="text-3xl font-black text-white tabular-nums" id="gauge-value">0</div>
+                  <div class="text-xs text-slate-500 font-mono">/ 100</div>
+                  <div class="text-xs text-slate-400 mt-0.5">Threat Score</div>
+                </div>
+              </div>
+
+              <!-- Threat info -->
+              <div class="flex-1 text-center sm:text-left space-y-3">
+                <div>
+                  <p class="text-xs text-slate-500 uppercase tracking-widest mb-1.5">Threat Level</p>
+                  <span id="threat-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold">
+                    <i class="fa-solid fa-circle text-xs"></i>
+                    <span id="threat-level-text">—</span>
+                  </span>
+                </div>
+
+                <!-- Threat bar -->
+                <div>
+                  <p class="text-xs text-slate-500 mb-2">Risk Spectrum</p>
+                  <div class="threat-bar">
+                    <div class="threat-indicator" id="threat-indicator" style="left: 0%"></div>
+                  </div>
+                  <div class="flex justify-between text-xs text-slate-600 mt-2">
+                    <span>Safe</span><span>Suspicious</span><span>Critical</span>
+                  </div>
+                </div>
+
+                <!-- Detection mode used -->
+                <div class="glass-inner rounded-lg px-3 py-2 flex items-center gap-2 text-xs text-slate-400">
+                  <i class="fa-solid fa-microchip text-indigo-400"></i>
+                  <span id="result-mode-label">Analysis Mode: —</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Card -->
+          <div class="glass rounded-2xl p-5" id="summary-card">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid fa-file-magnifying-glass text-indigo-400 text-sm"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-200 mb-1.5">AI Summary</h3>
+                <p id="summary-text" class="text-sm text-slate-400 leading-relaxed"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Red Flags -->
+          <div class="glass rounded-2xl p-5" id="red-flags-card">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-semibold text-slate-200">
+                <i class="fa-solid fa-triangle-exclamation text-red-400 mr-2"></i>Red Flags Detected
+              </h3>
+              <span id="flag-count" class="text-xs glass-inner rounded-full px-2.5 py-1 text-slate-400 font-mono">0 flags</span>
+            </div>
+            <div id="flags-container" class="space-y-2.5"></div>
+            <div id="no-flags-msg" class="text-center py-6 text-sm text-slate-500 hidden">
+              <i class="fa-solid fa-circle-check text-emerald-400 text-2xl mb-2 block"></i>
+              No significant red flags detected. Always verify independently.
+            </div>
+          </div>
+
+          <!-- Verification Checklist -->
+          <div class="glass rounded-2xl p-5" id="checklist-card">
+            <h3 class="text-sm font-semibold text-slate-200 mb-4">
+              <i class="fa-solid fa-clipboard-check text-emerald-400 mr-2"></i>Verification Checklist
+            </h3>
+            <div id="checklist-container" class="space-y-2"></div>
+          </div>
+
+        </div>
+        <!-- /results-state -->
+
+      </div>
+      <!-- /right panel -->
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <footer class="border-t border-slate-800/60 mt-12 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+        <p>
+          <i class="fa-solid fa-shield-halved text-indigo-500 mr-1.5"></i>
+          PhishShield AI — Educational tool. Always verify job offers through official channels.
+        </p>
+        <div class="flex items-center gap-4">
+          <span><i class="fa-solid fa-brain mr-1 text-indigo-500"></i>Powered by Gemini 2.5 Flash</span>
+          <span class="w-px h-3 bg-slate-700"></span>
+          <span><i class="fa-solid fa-bolt mr-1 text-amber-500"></i>Offline Heuristics Engine</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════ JAVASCRIPT ENGINE ═══════════════════════ -->
+  <script>
+  // ─────────────────────────────────────────────────────────────────
+  // CONFIGURATION
+  // ─────────────────────────────────────────────────────────────────
+  const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : '';
+
+  // ─────────────────────────────────────────────────────────────────
+  // PHISHING SAMPLE
+  // ─────────────────────────────────────────────────────────────────
+  const PHISHING_SAMPLE = `Subject: URGENT — Congratulations! Job Offer from Apex Remote Solutions Inc.
+
+Dear Candidate,
+
+We are pleased to extend a formal offer of employment for the position of Remote Data Entry Specialist at Apex Remote Solutions Inc. (www.apex-remote-solutions-inc-jobs.net).
+
+POSITION DETAILS:
+Title: Senior Remote Data Entry Specialist
+Annual Salary: $150,000 – $180,000 (NO EXPERIENCE REQUIRED)
+Start Date: IMMEDIATELY — within 48 hours of acceptance
+Location: 100% work-from-home (WhatsApp team meetings only)
+
+This position requires NO interview. You were selected based on your profile from Indeed/LinkedIn. The hiring decision has been approved by our HR Director, Mr. Daniel Whitmore (danielwhitmore.hr@gmail.com).
+
+EQUIPMENT SETUP — ACTION REQUIRED:
+To begin working immediately, you must purchase your home-office equipment kit directly from our certified vendor:
+• Dell Laptop (Work Edition) — $1,200
+• Ergonomic Chair + Desk Setup — $450
+• Encrypted USB Security Key — $85
+
+Total: $1,735 USD
+
+You must purchase these items TODAY using Zelle, CashApp, or wire transfer to:
+Account: 8847291033
+Routing: 021000021
+
+YOU WILL BE FULLY REIMBURSED on your first paycheck within 3 business days. We will also mail you a cashier check for $2,500 (includes equipment + signing bonus). Please deposit the check immediately and wire back the difference of $765 to cover licensing fees.
+
+We are also requesting the following to complete your onboarding:
+• Full legal name and date of birth
+• Social Security Number (SSN)
+• Bank account and routing number for direct deposit setup
+• Copy of driver's license (front and back)
+
+Reply to this email with all documents attached, or message our HR representative on Telegram: @apexhr_daniel
+
+This offer expires in 24 HOURS. Do not delay — positions are filling fast!
+
+Warm regards,
+Daniel Whitmore
+Director of Human Resources
+Apex Remote Solutions Inc.
+"Your Future Starts Today!" ™`;
+
+  // ─────────────────────────────────────────────────────────────────
+  // OFFLINE HEURISTIC ENGINE
+  // ─────────────────────────────────────────────────────────────────
+  const HEURISTIC_RULES = [
+    // Financial Traps — CRITICAL
+    { pattern: /cashier\s*check|money\s*order/gi, weight: 25, severity: 'CRITICAL', category: 'Financial Trap', title: 'Cashier Check Overpayment Scam', description: 'Cashier check schemes are a hallmark of overpayment fraud. Victims deposit a fake check then wire back the "difference" — leaving them liable for the full amount.' },
+    { pattern: /wire\s*transfer|wiring\s*funds/gi, weight: 22, severity: 'CRITICAL', category: 'Financial Trap', title: 'Wire Transfer Demand', description: 'Legitimate employers never ask job candidates to initiate wire transfers. This is a primary red flag for financial fraud.' },
+    { pattern: /zelle|cashapp|venmo|paypal\s*friends|crypto|bitcoin|usdt/gi, weight: 20, severity: 'CRITICAL', category: 'Financial Trap', title: 'Peer-to-Peer Payment Request', description: 'Requests to pay via Zelle, CashApp, or cryptocurrency are irreversible and untraceable — favored by scammers.' },
+    { pattern: /deposit\s*(the\s*)?check|deposit\s*funds|deposit\s*immediately/gi, weight: 20, severity: 'CRITICAL', category: 'Financial Trap', title: 'Fake Deposit Check Scheme', description: 'You\'re asked to deposit a fraudulent check and forward the money. The check will bounce leaving you responsible for the full amount.' },
+    { pattern: /purchase\s*equipment|buy\s*(your\s*)?(laptop|computer|equipment)|equipment\s*kit/gi, weight: 22, severity: 'CRITICAL', category: 'Financial Trap', title: 'Pay-for-Equipment Trap', description: 'Scammers ask victims to purchase work equipment upfront, promising reimbursement that never arrives.' },
+    { pattern: /reimbur(se|sement)|wire\s*back|send\s*back\s*the\s*difference/gi, weight: 18, severity: 'HIGH', category: 'Financial Trap', title: '"Reimbursement" Lure', description: 'Promises of reimbursement are used to justify upfront payment requests. Legitimate employers pre-supply equipment.' },
+    // Unrealistic Offers — HIGH
+    { pattern: /no\s*experience\s*(required|needed).*(\$\d{3}|\d{3}k|\d{3},\d{3})/gi, weight: 18, severity: 'HIGH', category: 'Unrealistic Offer', title: 'Sky-High Salary, Zero Experience', description: 'Combining "no experience required" with an exceptionally high salary is a classic lure to attract desperate job seekers.' },
+    { pattern: /\$1[5-9]\d,\d{3}|\$[2-9]\d{2},\d{3}/gi, weight: 10, severity: 'MEDIUM', category: 'Unrealistic Offer', title: 'Unusually High Salary Claim', description: 'Salaries significantly above market rate for the described role may be used to entice victims.' },
+    // Communication Red Flags — HIGH
+    { pattern: /telegram|whatsapp\s*(only|interview|meeting|contact)/gi, weight: 16, severity: 'HIGH', category: 'Communication Red Flag', title: 'Off-Platform Communication (Telegram/WhatsApp)', description: 'Moving communication to encrypted messaging apps avoids corporate email trails and signals lack of legitimate infrastructure.' },
+    { pattern: /no\s*interview|no\s*video\s*(call|interview)|text[\s-]only\s*interview/gi, weight: 14, severity: 'HIGH', category: 'Communication Red Flag', title: 'No Video Interview Required', description: 'Avoiding video calls is a strong indicator the "employer" is not who they claim — they cannot show themselves on camera.' },
+    { pattern: /@gmail\.com|@yahoo\.com|@hotmail\.com|@outlook\.com/gi, weight: 12, severity: 'HIGH', category: 'Communication Red Flag', title: 'Free Email Domain for Corporate Offer', description: 'Legitimate companies use official corporate email domains. A Gmail or Yahoo address from a "Fortune 500" HR department is a major red flag.' },
+    // Identity / Data Theft — CRITICAL
+    { pattern: /social\s*security|ssn|\bss\s*#/gi, weight: 22, severity: 'CRITICAL', category: 'Identity Theft', title: 'SSN Requested Prematurely', description: 'Requesting your Social Security Number before a background check stage after formal acceptance is a clear identity theft attempt.' },
+    { pattern: /bank\s*account\s*(and\s*)?routing|routing\s*number.*bank/gi, weight: 20, severity: 'CRITICAL', category: 'Identity Theft', title: 'Bank Details Requested Upfront', description: 'Bank account details should never be shared before completing legitimate onboarding with HR verification.' },
+    { pattern: /driver.?s?\s*licen(s|c)e.*copy|(copy|scan|photo).*driver.?s?\s*licen/gi, weight: 15, severity: 'HIGH', category: 'Identity Theft', title: 'ID Document Scan Requested', description: 'Requesting copies of your ID early in the process is used to commit identity theft or apply for loans in your name.' },
+    // Urgency Pressure — MEDIUM
+    { pattern: /expires?\s*in\s*\d+\s*(hours?|days?)|urgent.*reply|limited\s*time|act\s*now|do\s*not\s*delay/gi, weight: 10, severity: 'MEDIUM', category: 'Urgency Pressure', title: 'Artificial Time Pressure', description: 'Creating urgency with deadlines pressures victims into acting before fully evaluating the offer.' },
+    { pattern: /immediately|within\s*(24|48|72)\s*hours?|start\s*today/gi, weight: 8, severity: 'MEDIUM', category: 'Urgency Pressure', title: 'Immediate Action Demanded', description: 'Pressure to start "immediately" or "within 48 hours" without standard notice periods is a social engineering tactic.' },
+    // Impersonation — HIGH
+    { pattern: /selected\s*(from|based\s*on)\s*(your\s*)?(indeed|linkedin|profile)|we\s*found\s*your\s*(resume|profile)/gi, weight: 12, severity: 'HIGH', category: 'Social Engineering', title: 'Unsolicited Profile Selection', description: 'Claims of finding you on LinkedIn/Indeed without any application are common social engineering openers for mass-phishing campaigns.' },
+  ];
+
+  function runOfflineHeuristics(text) {
+    const results = { scam_threat_index: 0, threat_level: 'LOW', summary: '', red_flags_detected: [], verification_checklist: [] };
+    let rawScore = 0;
+    const seen = new Set();
+
+    for (const rule of HEURISTIC_RULES) {
+      if (rule.pattern.test(text)) {
+        rule.pattern.lastIndex = 0; // reset regex state
+        if (!seen.has(rule.title)) {
+          seen.add(rule.title);
+          rawScore += rule.weight;
+          results.red_flags_detected.push({
+            category: rule.category,
+            flag_title: rule.flag_title || rule.title,
+            description: rule.description,
+            severity: rule.severity
+          });
+        }
+      }
+    }
+
+    // Normalize to 0-100 (cap at 100)
+    const maxPossible = 120;
+    results.scam_threat_index = Math.min(100, Math.round((rawScore / maxPossible) * 100));
+
+    if (results.scam_threat_index <= 25) results.threat_level = 'LOW';
+    else if (results.scam_threat_index <= 50) results.threat_level = 'MEDIUM';
+    else if (results.scam_threat_index <= 75) results.threat_level = 'HIGH';
+    else results.threat_level = 'CRITICAL';
+
+    const flagCount = results.red_flags_detected.length;
+    const critCount = results.red_flags_detected.filter(f => f.severity === 'CRITICAL').length;
+
+    if (flagCount === 0) {
+      results.summary = 'No significant phishing indicators were detected in the offline heuristic scan. The offer appears to use standard language, but always verify through official channels before sharing personal information.';
+    } else if (results.threat_level === 'CRITICAL') {
+      results.summary = `CRITICAL SCAM ALERT: Offline heuristics detected ${flagCount} red flags including ${critCount} CRITICAL indicators. This offer exhibits multiple hallmarks of employment fraud — including financial traps, identity theft attempts, and social engineering. Do NOT engage further.`;
+    } else if (results.threat_level === 'HIGH') {
+      results.summary = `HIGH RISK: ${flagCount} suspicious patterns detected including ${critCount} critical concern(s). This offer shows significant warning signs consistent with job-offer phishing. Verify independently before proceeding.`;
+    } else {
+      results.summary = `MODERATE RISK: ${flagCount} yellow flags detected. While not definitively a scam, several elements warrant careful verification. Do not share financial or personal information until the employer's identity is confirmed.`;
+    }
+
+    results.verification_checklist = [
+      'Verify the company\'s official website independently — search the company name directly in Google, not through links in the email.',
+      'Call the company\'s publicly listed phone number and ask to speak with HR to confirm the job offer.',
+      'Check the hiring manager\'s email domain — it should match the company\'s official website domain exactly.',
+      'Search the company name + "scam" or "fraud" on Google and check Reddit/Glassdoor for reports.',
+      'Never purchase equipment or send money before your first paycheck clears; legitimate employers provide company-issued devices.',
+      'Verify the job posting exists on the company\'s official careers page.',
+      'Do not share your SSN or bank details until after completing standard background check procedures.',
+      'Use WHOIS lookup (whois.domaintools.com) to check the domain age of the company website.',
+      'Request a physical office address and verify it via Google Maps Street View.',
+      'Report suspected scam offers to the FTC at reportfraud.ftc.gov and your local law enforcement.',
+    ];
+
+    return results;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // UI HELPERS
+  // ─────────────────────────────────────────────────────────────────
+  function setGauge(score) {
+    const circumference = 339.3;
+    const fill = document.getElementById('gauge-fill');
+    const valueEl = document.getElementById('gauge-value');
+    const offset = circumference - (score / 100) * circumference;
+
+    // Color based on score
+    let color = '#4ade80';
+    if (score > 75) color = '#ef4444';
+    else if (score > 50) color = '#fb923c';
+    else if (score > 25) color = '#facc15';
+
+    fill.style.strokeDashoffset = circumference; // reset
+    fill.style.stroke = color;
+    valueEl.textContent = '0';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fill.style.strokeDashoffset = offset;
+        // Animate counter
+        let current = 0;
+        const duration = 1200;
+        const step = score / (duration / 16);
+        const timer = setInterval(() => {
+          current = Math.min(score, current + step);
+          valueEl.textContent = Math.round(current);
+          if (current >= score) clearInterval(timer);
+        }, 16);
+      });
+    });
+  }
+
+  function setThreatBadge(level) {
+    const badge = document.getElementById('threat-badge');
+    const text = document.getElementById('threat-level-text');
+    badge.className = 'inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold ';
+    text.textContent = level;
+    if (level === 'CRITICAL') badge.className += 'badge-critical';
+    else if (level === 'HIGH') badge.className += 'badge-high';
+    else if (level === 'MEDIUM') badge.className += 'badge-medium';
+    else badge.className += 'badge-low';
+  }
+
+  function setThreatIndicator(score) {
+    const indicator = document.getElementById('threat-indicator');
+    setTimeout(() => { indicator.style.left = score + '%'; }, 100);
+  }
+
+  function getSeverityClass(severity) {
+    if (severity === 'CRITICAL') return 'badge-critical';
+    if (severity === 'HIGH') return 'badge-high';
+    if (severity === 'MEDIUM') return 'badge-medium';
+    return 'badge-low';
+  }
+
+  function getCategoryIcon(category) {
+    const map = {
+      'Financial Trap': 'fa-solid fa-sack-dollar',
+      'Identity Theft': 'fa-solid fa-id-card',
+      'Social Engineering': 'fa-solid fa-masks-theater',
+      'Urgency Pressure': 'fa-solid fa-hourglass-half',
+      'Impersonation': 'fa-solid fa-user-secret',
+      'Communication Red Flag': 'fa-solid fa-comment-slash',
+      'Unrealistic Offer': 'fa-solid fa-star-exclamation',
+    };
+    return map[category] || 'fa-solid fa-triangle-exclamation';
+  }
+
+  function renderFlags(flags) {
+    const container = document.getElementById('flags-container');
+    const noFlags = document.getElementById('no-flags-msg');
+    const countEl = document.getElementById('flag-count');
+    container.innerHTML = '';
+
+    if (!flags || flags.length === 0) {
+      noFlags.classList.remove('hidden');
+      countEl.textContent = '0 flags';
+      return;
+    }
+
+    noFlags.classList.add('hidden');
+    countEl.textContent = flags.length + ' flag' + (flags.length !== 1 ? 's' : '');
+
+    // Sort by severity
+    const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    flags.sort((a, b) => (order[a.severity] ?? 4) - (order[b.severity] ?? 4));
+
+    flags.forEach((flag, i) => {
+      const card = document.createElement('div');
+      card.className = 'flag-card glass-inner rounded-xl p-3.5 flex gap-3 border border-transparent';
+      card.style.animationDelay = (i * 80) + 'ms';
+      card.innerHTML = `
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+             style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2)">
+          <i class="${getCategoryIcon(flag.category)} text-indigo-400 text-xs"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <span class="text-sm font-semibold text-slate-200 leading-snug">${escapeHtml(flag.flag_title)}</span>
+            <span class="flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${getSeverityClass(flag.severity)}">${flag.severity}</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">${escapeHtml(flag.description)}</p>
+          <span class="inline-block mt-1.5 text-xs text-slate-600 font-mono">${escapeHtml(flag.category)}</span>
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  function renderChecklist(items) {
+    const container = document.getElementById('checklist-container');
+    container.innerHTML = '';
+    if (!items || items.length === 0) return;
+    items.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'checklist-item flex items-start gap-3 rounded-lg px-3 py-2.5 -mx-1 cursor-pointer group';
+      div.innerHTML = `
+        <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 border-slate-600 group-hover:border-emerald-400 mt-0.5 flex items-center justify-center transition-colors" onclick="toggleCheck(this)">
+          <i class="fa-solid fa-check text-emerald-400 text-xs opacity-0 check-icon transition-opacity"></i>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">${escapeHtml(item)}</p>`;
+      container.appendChild(div);
+    });
+  }
+
+  function toggleCheck(el) {
+    const icon = el.querySelector('.check-icon');
+    const isChecked = icon.style.opacity === '1';
+    icon.style.opacity = isChecked ? '0' : '1';
+    el.style.borderColor = isChecked ? '' : '#4ade80';
+    el.style.background = isChecked ? '' : 'rgba(74,222,128,0.1)';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showResults(data, mode) {
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('results-state').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.remove('hidden');
+
+    const score = Math.max(0, Math.min(100, parseInt(data.scam_threat_index) || 0));
+    setGauge(score);
+    setThreatBadge(data.threat_level || 'LOW');
+    setThreatIndicator(score);
+    document.getElementById('summary-text').textContent = data.summary || '—';
+    document.getElementById('result-mode-label').textContent = 'Analysis Mode: ' + mode;
+    renderFlags(data.red_flags_detected || []);
+    renderChecklist(data.verification_checklist || []);
+  }
+
+  function showLoading() {
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('results-state').classList.add('hidden');
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.add('hidden');
+
+    // Animate loading steps
+    const steps = ['step2-icon','step3-icon','step4-icon'];
+    steps.forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.className = 'fa-solid fa-circle-notch animate-spin text-indigo-400 w-4';
+        }
+      }, (i + 1) * 700);
+    });
+  }
+
+  function setInspectBtn(loading) {
+    const btn = document.getElementById('inspect-btn');
+    const icon = document.getElementById('inspect-icon');
+    const text = document.getElementById('inspect-btn-text');
+    btn.disabled = loading;
+    if (loading) {
+      icon.className = 'fa-solid fa-circle-notch animate-spin';
+      text.textContent = 'Analyzing…';
+    } else {
+      icon.className = 'fa-solid fa-shield-virus';
+      text.textContent = 'Inspect Offer';
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // MAIN INSPECT FUNCTION
+  // ─────────────────────────────────────────────────────────────────
+  async function inspectOffer() {
+    const offerText = document.getElementById('offer-text').value.trim();
+    const companyUrl = document.getElementById('company-url').value.trim();
+
+    if (offerText.length < 50) {
+      showToast('Please paste at least 50 characters of offer text for analysis.', 'warn');
+      document.getElementById('offer-text').focus();
+      return;
+    }
+
+    setInspectBtn(true);
+    showLoading();
+
+    try {
+      // Try Gemini API first
+      const response = await fetch(`${API_BASE}/api/inspect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offer_text: offerText, company_url: companyUrl }),
+        signal: AbortSignal.timeout(30000)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        if (err.fallback || response.status === 503) {
+          throw new Error('API_UNAVAILABLE');
+        }
+        throw new Error(err.error || 'API request failed');
+      }
+
+      const data = await response.json();
+      showResults(data, 'Gemini 2.5 Flash (AI)');
+      showToast('Gemini AI analysis complete!', 'success');
+
+    } catch (err) {
+      // Fallback to offline heuristics
+      console.warn('Falling back to offline heuristics:', err.message);
+      const offlineData = runOfflineHeuristics(offerText);
+      showResults(offlineData, 'Offline Heuristics (Client-Side)');
+
+      if (err.message === 'API_UNAVAILABLE' || err.name === 'TimeoutError' || err.name === 'TypeError') {
+        showToast('Running offline heuristic engine (API unavailable)', 'info');
+      } else {
+        showToast('Offline analysis complete — set GEMINI_API_KEY for enhanced AI results', 'info');
+      }
+    } finally {
+      setInspectBtn(false);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // SAMPLE LOADER
+  // ─────────────────────────────────────────────────────────────────
+  function loadPhishingSample() {
+    const ta = document.getElementById('offer-text');
+    const urlInput = document.getElementById('company-url');
+    ta.value = PHISHING_SAMPLE;
+    urlInput.value = 'https://apex-remote-solutions-inc-jobs.net/careers';
+    updateCharCount();
+    ta.focus();
+    showToast('Phishing sample loaded! Click "Inspect Offer" to analyze.', 'info');
+    // Animate textarea
+    ta.style.borderColor = 'rgba(239,68,68,0.5)';
+    setTimeout(() => { ta.style.borderColor = ''; }, 2000);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // CLEAR RESULTS
+  // ─────────────────────────────────────────────────────────────────
+  function clearResults() {
+    document.getElementById('results-state').classList.add('hidden');
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('empty-state').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.add('hidden');
+    // Reset gauge
+    const fill = document.getElementById('gauge-fill');
+    fill.style.strokeDashoffset = '339.3';
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // TOAST NOTIFICATIONS
+  // ─────────────────────────────────────────────────────────────────
+  function showToast(message, type = 'info') {
+    const existing = document.getElementById('toast-container');
+    if (!existing) {
+      const c = document.createElement('div');
+      c.id = 'toast-container';
+      c.className = 'fixed bottom-6 right-6 z-50 space-y-2';
+      document.body.appendChild(c);
+    }
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const colors = {
+      success: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+      warn:    'bg-amber-500/20 border-amber-500/40 text-amber-300',
+      info:    'bg-indigo-500/20 border-indigo-500/40 text-indigo-300',
+      error:   'bg-red-500/20 border-red-500/40 text-red-300',
+    };
+    const icons = { success: 'fa-check-circle', warn: 'fa-triangle-exclamation', info: 'fa-circle-info', error: 'fa-circle-xmark' };
+    toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium backdrop-blur-xl shadow-xl max-w-sm transition-all duration-300 ${colors[type] || colors.info}`;
+    toast.style.animation = 'fadeUp 0.3s ease-out';
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} flex-shrink-0"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // CHAR COUNTER
+  // ─────────────────────────────────────────────────────────────────
+  function updateCharCount() {
+    const ta = document.getElementById('offer-text');
+    const counter = document.getElementById('char-count');
+    const len = ta.value.length;
+    counter.textContent = len.toLocaleString() + ' chars';
+    counter.style.color = len < 50 ? '#f87171' : '#475569';
+  }
+  document.getElementById('offer-text').addEventListener('input', updateCharCount);
+
+  // ─────────────────────────────────────────────────────────────────
+  // API HEALTH CHECK
+  // ─────────────────────────────────────────────────────────────────
+  async function checkApiStatus() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    try {
+      const res = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        dot.className = 'w-2 h-2 rounded-full ' + (data.gemini_key_configured ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse');
+        text.textContent = data.gemini_key_configured ? 'API ONLINE' : 'KEY MISSING';
+        text.style.color = data.gemini_key_configured ? '#4ade80' : '#facc15';
+        document.getElementById('mode-text').textContent = data.gemini_key_configured ? 'GEMINI + HEURISTICS' : 'HEURISTICS ONLY';
+        if (data.model) {
+          const pill = document.getElementById('model-pill-name');
+          if (pill) pill.textContent = data.model;
+        }
+      } else { throw new Error(); }
+    } catch {
+      dot.className = 'w-2 h-2 rounded-full bg-red-400';
+      text.textContent = 'OFFLINE MODE';
+      text.style.color = '#f87171';
+      document.getElementById('mode-text').textContent = 'OFFLINE HEURISTICS';
+    }
+  }
+  checkApiStatus();
+
+  // Allow Ctrl+Enter to trigger inspect
+  document.getElementById('offer-text').addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') inspectOffer();
+  });
+  </script>
+</body>
+</html>
